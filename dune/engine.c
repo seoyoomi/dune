@@ -10,6 +10,7 @@ void intro(void);
 void outro(void);
 void cursor_move(DIRECTION dir);
 void sample_obj_move(void);
+void place_object(int, int, int, OBJECT_SAMPLE);
 POSITION sample_obj_next_position(void);
 
 
@@ -21,17 +22,137 @@ CURSOR cursor = { { 1, 1 }, {1, 1} };
 /* ================= game data =================== */
 char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH] = { 0 };
 
-RESOURCE resource = { 
-	.spice = 0,
-	.spice_max = 0,
-	.population = 0,
-	.population_max = 0
+RESOURCE resource = {
+	.spice = 0,   //현재 보유한 스파이스
+	.spice_max = 0,  //스파이스 최대 저장량
+	.population = 0,   //현재 인구 수
+	.population_max = 0   //최대 인구 수
 };
 
 OBJECT_SAMPLE obj = {
 	.pos = {1, 1},
 	.dest = {MAP_HEIGHT - 2, MAP_WIDTH - 2},
-	.repr = 'o',
+	.repr = 'o',  //화면에 표시될 문자
+	.speed = 300,
+	.next_move_time = 300
+};
+
+OBJECT_SAMPLE h_base = {
+	.pos = {1, MAP_WIDTH - 3},
+	.dest = {0, 0},
+	.repr = 'B',  //화면에 표시될 문자
+	.speed = 0,
+	.next_move_time = 0
+};
+
+OBJECT_SAMPLE h_plate = {
+	.pos = {1, MAP_WIDTH - 5},
+	.dest = {0, 0},
+	.repr = 'P',  //화면에 표시될 문자
+	.speed = 0,
+	.next_move_time = 0
+};
+
+OBJECT_SAMPLE h_spice = {
+	.pos = {MAP_HEIGHT - 11, MAP_WIDTH - 2},
+	.dest = {0, 0},
+	.repr = 'S',  //화면에 표시될 문자
+	.speed = 0,
+	.next_move_time = 0
+};
+
+OBJECT_SAMPLE h_harvester = {
+	.pos = {3, MAP_WIDTH - 2},
+	.dest = {0, 0},
+	.repr = 'H',  //화면에 표시될 문자
+	.speed = 0,
+	.next_move_time = 0
+};
+
+OBJECT_SAMPLE rock1 = {
+	.pos = {3, MAP_WIDTH - 34},
+	.dest = {0, 0},
+	.repr = 'R',  //화면에 표시될 문자
+	.speed = 0,
+	.next_move_time = 0
+};
+
+OBJECT_SAMPLE rock2 = {
+	.pos = {4, MAP_WIDTH - 12},
+	.dest = {0, 0},
+	.repr = 'R',  //화면에 표시될 문자
+	.speed = 0,
+	.next_move_time = 0
+};
+
+OBJECT_SAMPLE rock3 = {
+	.pos = {9, MAP_WIDTH - 44},
+	.dest = {0, 0},
+	.repr = 'R',  //화면에 표시될 문자
+	.speed = 0,
+	.next_move_time = 0
+};
+
+OBJECT_SAMPLE rock4 = {
+	.pos = {11, MAP_WIDTH - 30},
+	.dest = {0, 0},
+	.repr = 'R',  //화면에 표시될 문자
+	.speed = 0,
+	.next_move_time = 0
+};
+
+OBJECT_SAMPLE rock5 = {
+	.pos = {12, MAP_WIDTH - 9},
+	.dest = {0, 0},
+	.repr = 'R',  //화면에 표시될 문자
+	.speed = 0,
+	.next_move_time = 0
+};
+
+OBJECT_SAMPLE p_base = {
+	.pos = {MAP_HEIGHT - 3, 1},
+	.dest = {0, 0},
+	.repr = 'B',  //화면에 표시될 문자
+	.speed = 0,
+	.next_move_time = 0
+};
+
+OBJECT_SAMPLE p_plate = {
+	.pos = {MAP_HEIGHT - 3, 3},
+	.dest = {0, 0},
+	.repr = 'P',  //화면에 표시될 문자
+	.speed = 0,
+	.next_move_time = 0
+};
+
+OBJECT_SAMPLE p_spice = {
+	.pos = {MAP_HEIGHT - 9, 1},
+	.dest = {0, 0},
+	.repr = 'S',  //화면에 표시될 문자
+	.speed = 0,
+	.next_move_time = 0
+};
+
+OBJECT_SAMPLE p_harvester = {
+	.pos = {MAP_HEIGHT - 4, 1},
+	.dest = {0, 0},
+	.repr = 'H',  //화면에 표시될 문자
+	.speed = 0,
+	.next_move_time = 0
+};
+
+OBJECT_SAMPLE sandwarm1 = {
+	.pos = {2, MAP_WIDTH - 48},
+	.dest = {0, 0},
+	.repr = 'W',  //화면에 표시될 문자
+	.speed = 300,
+	.next_move_time = 300
+};
+
+OBJECT_SAMPLE sandwarm2 = {
+	.pos = {10, MAP_WIDTH - 16},
+	.dest = {0, 0},
+	.repr = 'W',  //화면에 표시될 문자
 	.speed = 300,
 	.next_move_time = 300
 };
@@ -74,7 +195,7 @@ int main(void) {
 
 /* ================= subfunctions =================== */
 void intro(void) {
-	printf("DUNE 1.5\n");		
+	printf("DUNE 1.5\n");
 	Sleep(2000);
 	system("cls");
 }
@@ -84,20 +205,55 @@ void outro(void) {
 	exit(0);
 }
 
+void place_object(int layer, int width, int height, OBJECT_SAMPLE obj) {
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			map[layer][obj.pos.row + i][obj.pos.column + j] = obj.repr;
+		}
+	}
+}
+
 void init(void) {
 	// layer 0(map[0])에 지형 생성
 	for (int j = 0; j < MAP_WIDTH; j++) {
-		map[0][0][j] = '#';
-		map[0][MAP_HEIGHT - 1][j] = '#';
+		map[0][0][j] = '#';   //위 벽
+		map[0][MAP_HEIGHT - 1][j] = '#';   //아래 벽
 	}
 
 	for (int i = 1; i < MAP_HEIGHT - 1; i++) {
-		map[0][i][0] = '#';
-		map[0][i][MAP_WIDTH - 1] = '#';
-		for (int j = 1; j < MAP_WIDTH-1; j++) {
-			map[0][i][j] = ' ';
+		map[0][i][0] = '#';  //왼쪽 세로벽
+		map[0][i][MAP_WIDTH - 1] = '#';    //오른쪽 세로벽
+
+
+		for (int j = 1; j < MAP_WIDTH - 1; j++) {
+			map[0][i][j] = ' ';   //가운데 빈 공간
 		}
 	}
+
+	//하코넨 본진
+	place_object(0, 2, 2, h_base);
+
+	//하코넨 장판
+	place_object(0, 2, 2, h_plate);
+
+	//하코넨 스파이스
+	place_object(0, 1, 1, h_spice);
+
+	//rock
+	place_object(0, 2, 2, rock1);
+	place_object(0, 1, 1, rock2);
+	place_object(0, 1, 1, rock3);
+	place_object(0, 2, 2, rock4);
+	place_object(0, 1, 1, rock5);
+
+	//플레이어 본진
+	place_object(0, 2, 2, p_base);
+
+	//플레이어 장판
+	place_object(0, 2, 2, p_plate);
+
+	//플레이어 스파이스
+	place_object(0, 1, 1, p_spice);
 
 	// layer 1(map[1])은 비워 두기(-1로 채움)
 	for (int i = 0; i < MAP_HEIGHT; i++) {
@@ -106,9 +262,20 @@ void init(void) {
 		}
 	}
 
+	//하코넨 하베스터
+	place_object(1, 1, 1, h_harvester);
+
+	//플레이어 하베스터
+	place_object(1, 1, 1, p_harvester);
+
+	//샌드웜
+	place_object(1, 1, 1, sandwarm1);
+	place_object(1, 1, 1, sandwarm2);
+
 	// object sample
 	map[1][obj.pos.row][obj.pos.column] = 'o';
 }
+
 
 // (가능하다면) 지정한 방향으로 커서 이동
 void cursor_move(DIRECTION dir) {
@@ -144,7 +311,7 @@ POSITION sample_obj_next_position(void) {
 		}
 		return obj.pos;
 	}
-	
+
 	// 가로축, 세로축 거리를 비교해서 더 먼 쪽 축으로 이동
 	if (abs(diff.row) >= abs(diff.column)) {
 		dir = (diff.row >= 0) ? d_down : d_up;
@@ -152,7 +319,7 @@ POSITION sample_obj_next_position(void) {
 	else {
 		dir = (diff.column >= 0) ? d_right : d_left;
 	}
-	
+
 	// validation check
 	// next_pos가 맵을 벗어나지 않고, (지금은 없지만)장애물에 부딪히지 않으면 다음 위치로 이동
 	// 지금은 충돌 시 아무것도 안 하는데, 나중에는 장애물을 피해가거나 적과 전투를 하거나... 등등
@@ -160,7 +327,7 @@ POSITION sample_obj_next_position(void) {
 	if (1 <= next_pos.row && next_pos.row <= MAP_HEIGHT - 2 && \
 		1 <= next_pos.column && next_pos.column <= MAP_WIDTH - 2 && \
 		map[1][next_pos.row][next_pos.column] < 0) {
-		
+
 		return next_pos;
 	}
 	else {

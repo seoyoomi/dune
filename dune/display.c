@@ -24,7 +24,7 @@ void display_cursor(CURSOR cursor);
 
 void display(
 	RESOURCE resource,
-	char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], 
+	char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH],
 	CURSOR cursor)
 {
 	display_resource(resource);
@@ -58,16 +58,43 @@ void project(char src[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char dest[MAP_HEIGHT][MAP
 	}
 }
 
+
+// 색상 반환 함수
+int get_color(char tile, int row, int col) {
+	switch (tile) {
+	case 'B':
+		if (row <= 2 && col >= MAP_WIDTH - 5) {
+			return 64;  // 하코넨 본진 (빨간색),
+		}
+		else {
+			return 144;  // 아트레이디스 본진 (파란색)
+		}
+	case 'P': return 128;    // 장판
+	case 'W': return 224;    // 샌드웜
+	case 'R': return 112;    // 바위
+	case 'S': return 96;     // 스파이스
+	case 'H':
+		if (row == 3 && col >= MAP_WIDTH - 3 && col <= MAP_WIDTH - 2) {
+			return 64;  // 하코넨 하베스터
+		}
+		else {
+			return 144;  //아트레이디스 하베스터
+		}
+	default: return COLOR_DEFAULT;
+	}
+}
+
 void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
-	project(map, backbuf);
+	project(map, backbuf); // 현재 맵 상태를 backbuf에 복사
 
 	for (int i = 0; i < MAP_HEIGHT; i++) {
 		for (int j = 0; j < MAP_WIDTH; j++) {
-			if (frontbuf[i][j] != backbuf[i][j]) {
-				POSITION pos = {i, j };
-				printc(padd(map_pos, pos), backbuf[i][j], COLOR_DEFAULT);
+			if (frontbuf[i][j] != backbuf[i][j]) {    // backbuf와 frontbuf가 다를 때만 갱신
+				POSITION pos = { i, j };
+				int color = get_color(backbuf[i][j], i, j);  // 해당 타일의 색상 얻기
+				printc(padd(map_pos, pos), backbuf[i][j], color);
 			}
-			frontbuf[i][j] = backbuf[i][j];
+			frontbuf[i][j] = backbuf[i][j];   // backbuf의 최신 정보를 frontbuf로 복사
 		}
 	}
 }

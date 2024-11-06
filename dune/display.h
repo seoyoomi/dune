@@ -13,7 +13,7 @@
 // 표시할 색상 정의. 대충 맞춰 뒀는데, 취향껏 추가하거나 변경하기
 #define COLOR_DEFAULT	15
 #define COLOR_CURSOR	112
-#define COLOR_RESOURCE  112
+#define COLOR_RESOURCE  112     //spice = %d/%d, population=%d/%d
 
 // 지금은 자원, 맵, 커서만 표시
 // 앞으로 화면에 표시할 내용들 여기에 추가하기
