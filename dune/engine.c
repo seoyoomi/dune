@@ -15,8 +15,8 @@ POSITION sample_obj_next_position(void);
 
 
 /* ================= control =================== */
-int sys_clock = 0;		// system-wide clock(ms)
-CURSOR cursor = { { 1, 1 }, {1, 1} };
+int sys_clock = 0;		// system-wide clock(ms)  //일정한 간격 (TICK = 10ms)마다 증가
+CURSOR cursor = { { 1, 1 }, {1, 1} };   //직전위치, 현재위치
 
 
 /* ================= game data =================== */
@@ -170,8 +170,8 @@ int main(void) {
 		KEY key = get_key();
 
 		// 키 입력이 있으면 처리
-		if (is_arrow_key(key)) {
-			cursor_move(ktod(key));
+		if (is_arrow_key(key)) {   //방향키인지 확인하는 함수
+			cursor_move(ktod(key));   //맞다면 커서 이동  Ktod: 키를 방향으로 변환
 		}
 		else {
 			// 방향키 외의 입력
@@ -279,28 +279,44 @@ void init(void) {
 
 // (가능하다면) 지정한 방향으로 커서 이동
 void cursor_move(DIRECTION dir) {
-	POSITION curr = cursor.current;
-	POSITION new_pos = pmove(curr, dir);
+	static KEY last_key = k_none;            // 마지막으로 입력된 키 저장
+	static int last_key_press_time = 0;      // 마지막 키 입력 시간을 기록
+	int current_time = sys_clock;            // 현재 시간
+
+	POSITION new_pos;
+
+	if ((current_time - last_key_press_time) <= 200) {
+		new_pos = pmove(cursor.current, dir);
+		new_pos = pmove(new_pos, dir);
+		new_pos = pmove(new_pos, dir);
+	}
+	else {
+		new_pos = pmove(cursor.current, dir);
+	}
 
 	// validation check
 	if (1 <= new_pos.row && new_pos.row <= MAP_HEIGHT - 2 && \
 		1 <= new_pos.column && new_pos.column <= MAP_WIDTH - 2) {
-
 		cursor.previous = cursor.current;
 		cursor.current = new_pos;
 	}
+
+	// 마지막 키와 시간 갱신
+	last_key_press_time = current_time;
+
 }
+
 
 /* ================= sample object movement =================== */
 POSITION sample_obj_next_position(void) {
 	// 현재 위치와 목적지를 비교해서 이동 방향 결정	
-	POSITION diff = psub(obj.dest, obj.pos);
+	POSITION diff = psub(obj.dest, obj.pos);  //현재 위치와 목적지 간의 차이
 	DIRECTION dir;
 
 	// 목적지 도착. 지금은 단순히 원래 자리로 왕복
 	if (diff.row == 0 && diff.column == 0) {
 		if (obj.dest.row == 1 && obj.dest.column == 1) {
-			// topleft --> bottomright로 목적지 설정
+			// topleft --> bottomright로 목적지 설정 (왼쪽 위 -> 오른쪽 아래)
 			POSITION new_dest = { MAP_HEIGHT - 2, MAP_WIDTH - 2 };
 			obj.dest = new_dest;
 		}
@@ -313,10 +329,11 @@ POSITION sample_obj_next_position(void) {
 	}
 
 	// 가로축, 세로축 거리를 비교해서 더 먼 쪽 축으로 이동
-	if (abs(diff.row) >= abs(diff.column)) {
-		dir = (diff.row >= 0) ? d_down : d_up;
+	//목적지에 도달하지 않은 경우, 세로거리와 가로거리 중 큰 쪽을 기준으로 이동방향 결정
+	if (abs(diff.row) >= abs(diff.column)) {    //세로가 더 크면 세로로 이동
+		dir = (diff.row >= 0) ? d_down : d_up;  
 	}
-	else {
+	else {  //아니라면 가로로 이동
 		dir = (diff.column >= 0) ? d_right : d_left;
 	}
 
@@ -324,11 +341,13 @@ POSITION sample_obj_next_position(void) {
 	// next_pos가 맵을 벗어나지 않고, (지금은 없지만)장애물에 부딪히지 않으면 다음 위치로 이동
 	// 지금은 충돌 시 아무것도 안 하는데, 나중에는 장애물을 피해가거나 적과 전투를 하거나... 등등
 	POSITION next_pos = pmove(obj.pos, dir);
+	
+	//맵 경계 안에 있는지 확인
 	if (1 <= next_pos.row && next_pos.row <= MAP_HEIGHT - 2 && \
 		1 <= next_pos.column && next_pos.column <= MAP_WIDTH - 2 && \
-		map[1][next_pos.row][next_pos.column] < 0) {
+		map[1][next_pos.row][next_pos.column] < 0) {  // 해당 위치에 장애물이 있는지 없는지 확인
 
-		return next_pos;
+		return next_pos;  //조건 만족 시 위치 이동
 	}
 	else {
 		return obj.pos;  // 제자리
@@ -342,9 +361,9 @@ void sample_obj_move(void) {
 	}
 
 	// 오브젝트(건물, 유닛 등)은 layer1(map[1])에 저장
-	map[1][obj.pos.row][obj.pos.column] = -1;
-	obj.pos = sample_obj_next_position();
-	map[1][obj.pos.row][obj.pos.column] = obj.repr;
+	map[1][obj.pos.row][obj.pos.column] = -1;     //현재 객체가 위치한 좌표의 값은 -1로 설정
+	obj.pos = sample_obj_next_position();   //다음으로 이동할 위치 계산(객체가 이동 가능한지 확인 후 이동할 위치 반환)
+	map[1][obj.pos.row][obj.pos.column] = obj.repr;   //객체가 새롭게 이동한 위치에 객체를 설정
 
-	obj.next_move_time = sys_clock + obj.speed;
+	obj.next_move_time = sys_clock + obj.speed;  //
 }

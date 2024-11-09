@@ -58,7 +58,6 @@ void project(char src[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char dest[MAP_HEIGHT][MAP
 	}
 }
 
-
 // 색상 반환 함수
 int get_color(char tile, int row, int col) {
 	switch (tile) {

@@ -7,6 +7,8 @@
 #include <conio.h>
 #include <assert.h>
 
+extern int sys_clock;
+
 /* ================= system parameters =================== */
 #define TICK 10		// time unit(ms)
 
@@ -71,7 +73,8 @@ inline POSITION dtop(DIRECTION d) {
 }
 
 // p를 d 방향으로 이동시킨 POSITION
-#define pmove(p, d)		(padd((p), dtop(d)))
+#define pmove(p, d)		(padd((p), dtop(d)))  //p는 현재 위치, d는 방향
+											  //dtop(d)는 방향 d를 좌표 이동량으로 변환하는 함수 
 
 /* ================= game data =================== */
 typedef struct {
