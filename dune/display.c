@@ -101,16 +101,18 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	}
 }
 
-// frontbuf[][]에서 커서 위치의 문자를 색만 바꿔서 그대로 다시 출력
 void display_cursor(CURSOR cursor) {
 	POSITION prev = cursor.previous;
 	POSITION curr = cursor.current;
 
-	char ch = frontbuf[prev.row][prev.column];
-	printc(padd(map_pos, prev), ch, COLOR_DEFAULT);
+	// 이전 커서 위치의 오브젝트를 원래 색상으로 복구
+	char prev_ch = frontbuf[prev.row][prev.column];
+	int prev_color = get_color(backbuf[prev.row][prev.column], prev.row, prev.column);
+	printc(padd(map_pos, prev), prev_ch, prev_color);
 
-	ch = frontbuf[curr.row][curr.column];
-	printc(padd(map_pos, curr), ch, COLOR_CURSOR);
+	// 현재 커서 위치를 커서 색상으로 표시
+	char curr_ch = frontbuf[curr.row][curr.column];
+	printc(padd(map_pos, curr), curr_ch, COLOR_CURSOR);
 }
 
 void display_status_title() {
