@@ -20,20 +20,21 @@ void display_resource(RESOURCE resource);
 void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 void display_cursor(CURSOR cursor);
 void display_status_title();
-void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, int is_update_requested);
+void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, int is_update_requested, int reset);
 
 void display(   //자원량, 
 	RESOURCE resource,
 	char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH],
 	CURSOR cursor,
-	int is_update_requested)
+	int is_update_requested,
+	int reset)
 {
 	display_resource(resource);
 	display_status_title();
 	display_map(map);
 	display_cursor(cursor);
 	// display_system_message()
-	display_object_info(map, cursor, is_update_requested);
+	display_object_info(map, cursor, is_update_requested, reset);
 	// display_commands()
 	// ...
 }
@@ -118,8 +119,14 @@ void display_status_title() {
 	printf("==========상태창==========\n");
 }
 
-void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, int is_update_requested) {
+void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, int is_update_requested, int reset) {
+	// esc를 눌렀을 떄 상태창 초기화
+	if (reset == 1) {
+		set_cursor_position(MAP_WIDTH + 1, 1);
+		clear_line_from_cursor();
+	}
 
+	//space를 눌렀을 때 해당 오브젝트 상태 출력
 	if (is_update_requested == 1) {
 		set_color(15);  // 오브젝트 정보 색상 설정
 		int current_info_y = 1;  // 상태창 출력의 Y축 시작 위치 (초기값 1)
@@ -141,52 +148,47 @@ void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor
 
 		clear_line_from_cursor();
 
-		switch (object_repr) {
-		case 'B':
-			if (cursor.current.row <= 2 && cursor.current.column >= MAP_WIDTH - 5) {
-				printf("본진: 하코넨 본부");
+			switch (object_repr) {
+			case 'B':
+				if (cursor.current.row <= 2 && cursor.current.column >= MAP_WIDTH - 5) {
+					printf("본진: 하코넨 본부");
+				}
+				else {
+					printf("본진: 아트레이디스 본부");
+				}
+				break;
+			case 'H':
+				if (cursor.current.row == 3 && cursor.current.column >= MAP_WIDTH - 3 && cursor.current.column <= MAP_WIDTH - 2) {
+					printf("하베스터: 하코넨 자원 채취 유닛");  // 하코넨 하베스터
+				}
+				else {
+					printf("하베스터: 아트레이디스 자원 채취 유닛");  // 아트레이디스 하베스터
+				}
+				break;
+			case 'W':
+				printf("샌드웜: 사막의 포식자");
+				break;
+			case 'S':
+				printf("스파이스 매장지: 자원 보유");
+				break;
+			case 'P':
+				printf("장판: 건설 가능 지형");
+				break;
+			case 'R':
+				printf("바위: 이동 불가 지형");
+				break;
+				// 추가적인 오브젝트에 대한 케이스 작성 가능
+			default:
+				printf("사막");
+				break;
 			}
-			else {
-				printf("본진: 아트레이디스 본부");
-			}
-			break;
-		case 'H':
-			if (cursor.current.row == 3 && cursor.current.column >= MAP_WIDTH - 3 && cursor.current.column <= MAP_WIDTH - 2) {
-				printf("하베스터: 하코넨 자원 채취 유닛");  // 하코넨 하베스터
-			}
-			else {
-				printf("하베스터: 아트레이디스 자원 채취 유닛");  // 아트레이디스 하베스터
-			}
-			break;
-		case 'W':
-			printf("샌드웜: 사막의 포식자");
-			break;
-		case 'S':
-			printf("스파이스 매장지: 자원 보유");
-			break;
-		case 'P':
-			printf("장판: 건설 가능 지형");
-			break;
-		case 'R':
-			printf("바위: 이동 불가 지형");
-			break;
-			// 추가적인 오브젝트에 대한 케이스 작성 가능
-		default:
-			printf("사막");
-			break;
-		}
 
-		printf("\n");
+			printf("\n");
 
-		// 다음 출력 위치를 위해 Y 좌표 증가
-		//current_info_y++;
-
-		// current_info_y가 일정 범위를 넘지 않도록 초기화 (예: 상태창 길이 제한)
-		if (current_info_y > MAP_HEIGHT) { // 상태창 출력 높이 제한 예시
-			current_info_y = 2;
-		}
+			// current_info_y가 일정 범위를 넘지 않도록 초기화 (예: 상태창 길이 제한)
+			if (current_info_y > MAP_HEIGHT) { // 상태창 출력 높이 제한 예시
+				current_info_y = 2;
+			}
+		
 	}
-
-	// 업데이트 후 플래그 초기화
-	is_update_requested = 0;
 }

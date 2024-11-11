@@ -161,11 +161,11 @@ OBJECT_SAMPLE sandwarm2 = {
 int main(void) {
 	srand((unsigned int)time(NULL));
 	int is_update_requested = 0;
-	//int reset = 0;
+	int reset = 0;
 
 	init();  //맵과 지형 생성
 	intro();  // "DUNE 1.5"
-	display(resource, map, cursor, is_update_requested);
+	display(resource, map, cursor, is_update_requested, reset);
 
 	while (1) {
 		// loop 돌 때마다(즉, TICK==10ms마다) 키 입력 확인
@@ -182,7 +182,7 @@ int main(void) {
 			case k_none: break;
 			case k_undef: break;
 			case k_space:is_update_requested = 1; break;
-			//case k_esc:reset = 1;  break;
+			case k_escape:reset = 1;  break;
 			default: break;
 			}
 		}
@@ -191,9 +191,9 @@ int main(void) {
 		sample_obj_move();
 
 		// 화면 출력
-		display(resource, map, cursor, is_update_requested);
+		display(resource, map, cursor, is_update_requested, reset);
 		is_update_requested = 0;
-		//reset = 0;
+		reset = 0;
 		Sleep(TICK);
 		sys_clock += 10;
 	}

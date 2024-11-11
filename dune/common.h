@@ -37,7 +37,7 @@ typedef enum {
 	k_quit,
 	k_undef, // 정의되지 않은 키 입력	
 	k_space,
-	k_esc
+	k_escape
 } KEY;
 
 
