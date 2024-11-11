@@ -24,7 +24,7 @@ char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH] = { 0 };
 
 RESOURCE resource = {
 	.spice = 0,   //현재 보유한 스파이스
-	.spice_max = 0,  //스파이스 최대 저장량
+	.spice_max = 9,  //스파이스 최대 저장량
 	.population = 0,   //현재 인구 수
 	.population_max = 0   //최대 인구 수
 };
@@ -160,10 +160,12 @@ OBJECT_SAMPLE sandwarm2 = {
 /* ================= main() =================== */
 int main(void) {
 	srand((unsigned int)time(NULL));
+	int is_update_requested = 0;
+	//int reset = 0;
 
-	init();
-	intro();
-	display(resource, map, cursor);
+	init();  //맵과 지형 생성
+	intro();  // "DUNE 1.5"
+	display(resource, map, cursor, is_update_requested);
 
 	while (1) {
 		// loop 돌 때마다(즉, TICK==10ms마다) 키 입력 확인
@@ -176,9 +178,11 @@ int main(void) {
 		else {
 			// 방향키 외의 입력
 			switch (key) {
-			case k_quit: outro();
-			case k_none:
-			case k_undef:
+			case k_quit: outro(); break;
+			case k_none: break;
+			case k_undef: break;
+			case k_space:is_update_requested = 1; break;
+			//case k_esc:reset = 1;  break;
 			default: break;
 			}
 		}
@@ -187,7 +191,9 @@ int main(void) {
 		sample_obj_move();
 
 		// 화면 출력
-		display(resource, map, cursor);
+		display(resource, map, cursor, is_update_requested);
+		is_update_requested = 0;
+		//reset = 0;
 		Sleep(TICK);
 		sys_clock += 10;
 	}
@@ -285,7 +291,7 @@ void cursor_move(DIRECTION dir) {
 
 	POSITION new_pos;
 
-	if ((current_time - last_key_press_time) <= 200) {
+	if ((current_time - last_key_press_time) <= 150) {
 		new_pos = pmove(cursor.current, dir);
 		new_pos = pmove(new_pos, dir);
 		new_pos = pmove(new_pos, dir);

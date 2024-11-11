@@ -1,6 +1,7 @@
 /*
 * raw(?) I/O
 */
+#include <windows.h>
 #include "io.h"
 
 void gotoxy(POSITION pos) {
@@ -33,6 +34,7 @@ KEY get_key(void) {
 
 	switch (byte) {
 	case 'q': return k_quit;  // 'q'를 누르면 종료
+	case ' ': return k_space; //space입력
 	case 224:
 		byte = _getch();  // MSB 224가 입력 되면 1바이트 더 전달 받기
 		switch (byte) {
@@ -44,5 +46,32 @@ KEY get_key(void) {
 		}
 	default: return k_undef;
 	}
+}
+
+void set_cursor_position(int x, int y) {
+	COORD coord;
+	coord.X = x;
+	coord.Y = y;
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+}
+
+void clear_line_from_cursor() {
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	DWORD length, written;
+	COORD cursor_pos;
+
+	// 콘솔 핸들 가져오기
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+	// 현재 커서 위치와 콘솔 정보 가져오기
+	GetConsoleScreenBufferInfo(hConsole, &csbi);
+	cursor_pos = csbi.dwCursorPosition;
+
+	// 현재 커서 위치부터 줄 끝까지의 길이 계산
+	length = csbi.dwSize.X - cursor_pos.X;
+
+	// 공백으로 채워서 줄 끝까지 지우기
+	FillConsoleOutputCharacter(hConsole, ' ', length, cursor_pos, &written);
+	SetConsoleCursorPosition(hConsole, cursor_pos);  // 커서 위치 복원
 }
 
