@@ -1,4 +1,8 @@
-﻿#include <stdlib.h>
+﻿
+// 1 ~ 2번 완료
+// 3번 - 샌드웜이 가장 가까운 유닛을 찾아 이동. 하지만 이후 더이상 가까운 유닛을 찾아 이동하지 않음 (수정 필요)
+
+#include <stdlib.h>
 #include <time.h>
 #include <assert.h>
 #include <limits.h>
@@ -25,7 +29,7 @@ CURSOR cursor = { { 1, 1 }, {1, 1} };   //직전위치, 현재위치
 char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH] = { 0 };
 
 RESOURCE resource = {
-	.spice = 0,   //현재 보유한 스파이스
+	.spice = 5,   //현재 보유한 스파이스
 	.spice_max = 9,  //스파이스 최대 저장량
 	.population = 0,   //현재 인구 수
 	.population_max = 0   //최대 인구 수
@@ -135,6 +139,13 @@ OBJECT_SAMPLE p_harvester = {
 	.next_move_time = 0
 };
 
+OBJECT_SAMPLE p_harvester2 = {
+	.pos = {MAP_HEIGHT - 13, 20},
+	.dest = {0, 0},
+	.repr = 'H',  //화면에 표시될 문자
+	.speed = 0,
+	.next_move_time = 0
+};
 
 OBJECT_SAMPLE sandwarm1 = {
 	.pos = {2, MAP_WIDTH - 48},
@@ -152,6 +163,7 @@ OBJECT_SAMPLE sandwarm2 = {
 	.speed = 300,
 	.next_move_time = 300
 };
+
 
 /* ================= main() =================== */
 int main(void) {
@@ -185,7 +197,7 @@ int main(void) {
 
 		// 샘플 오브젝트 동작
 		sample_obj_move(&sandwarm1);
-		//sample_obj_move(&sandwarm2);
+		sample_obj_move(&sandwarm2);
 
 		// 화면 출력
 		display(resource, map, cursor, is_update_requested, reset);
@@ -259,7 +271,6 @@ void init(void) {
 	place_object(0, 1, 1, p_spice);
 
 
-
 	// layer 1(map[1])은 비워 두기(-1로 채움)
 	for (int i = 0; i < MAP_HEIGHT; i++) {
 		for (int j = 0; j < MAP_WIDTH; j++) {
@@ -271,6 +282,7 @@ void init(void) {
 
 	//플레이어 하베스터
 	place_object(1, 1, 1, p_harvester);
+	place_object(1, 1, 1, p_harvester2);
 
 	//샌드웜
 	place_object(1, 1, 1, sandwarm1);
@@ -310,7 +322,6 @@ void cursor_move(DIRECTION dir) {
 
 }
 
-
 /* ================= sample object movement =================== */
 
 // 가장 가까운 유닛 위치를 찾는 함수
@@ -318,124 +329,108 @@ POSITION find_nearest_unit(POSITION obj_pos, char map[1][MAP_HEIGHT][MAP_WIDTH])
 	POSITION nearest_pos = { -1, -1 };
 	int min_distance = INT_MAX;
 
-		for (int i = 0; i < MAP_HEIGHT; i++) {
-			for (int j = 0; j < MAP_WIDTH; j++) {
-				char cell = map[1][i][j];  // 정확한 레이어와 위치 참조
-				// layer별 빈 공간 조건을 구분하여 적용
-				if (cell != -1) {
-					int distance = abs(i - obj_pos.row) + abs(j - obj_pos.column);
+	for (int i = 0; i < MAP_HEIGHT; i++) {
+		for (int j = 0; j < MAP_WIDTH; j++) {
+			char cell = map[1][i][j];  // 정확한 레이어와 위치 참조
+			// layer별 빈 공간 조건을 구분하여 적용
+			if (cell != -1 && cell != 'W' && !(i == obj_pos.row && j == obj_pos.column)) {
+				int distance = abs(i - obj_pos.row) + abs(j - obj_pos.column);
 
-					// 더 가까운 오브젝트를 찾으면 위치와 최단 거리를 갱신
-					if (distance < min_distance) {
-						min_distance = distance;
-						nearest_pos.row = i;
-						nearest_pos.column = j;
-					}
+				// 더 가까운 오브젝트를 찾으면 위치와 최단 거리를 갱신
+				if (distance < min_distance) {
+					min_distance = distance;
+					nearest_pos.row = i;
+					nearest_pos.column = j;
 				}
 			}
 		}
+	}
 
 	return nearest_pos;
 }
 
-
-// 샌드웜의 다음 위치를 계산하는 함수
 POSITION sample_obj_next_position(OBJECT_SAMPLE* obj) {
-	// 현재 위치에서 가장 가까운 유닛의 위치를 찾아 목적지로 설정
+	// 가장 가까운 유닛의 위치를 찾아 목적지로 설정
 	POSITION nearest_unit_pos = find_nearest_unit(obj->pos, map);
 
 	if (nearest_unit_pos.row != -1 && nearest_unit_pos.column != -1) {
-		obj->dest = nearest_unit_pos;
+		obj->dest = nearest_unit_pos;  // 가장 가까운 유닛을 목적지로 설정
 	}
 	else {
-		// 유닛이 없으면 목적지를 유지하거나 멈춤
+		// 유닛이 없을 경우 제자리에 멈춤
 		return obj->pos;
 	}
 
 	POSITION diff = psub(obj->dest, obj->pos);  // 현재 위치와 목적지 간의 차이
-	DIRECTION dir;
+	DIRECTION preferred_dir;
 
 	// 목적지와의 거리를 비교해서 더 먼 쪽 축으로 이동
 	if (abs(diff.row) >= abs(diff.column)) {
-		dir = (diff.row > 0) ? d_down : d_up;
+		preferred_dir = (diff.row > 0) ? d_down : d_up;
 	}
 	else {
-		dir = (diff.column > 0) ? d_right : d_left;
+		preferred_dir = (diff.column > 0) ? d_right : d_left;
 	}
 
-	// 다음 위치 계산
-	POSITION next_pos = pmove(obj->pos, dir);
+	// 이동 가능한 방향 찾기 (우회 포함)
+	for (int i = 0; i < 4; i++) { // 최대 4방향 확인
+		POSITION next_pos = pmove(obj->pos, preferred_dir);
 
-	// 이동할 위치가 맵 경계 내에 있고, 장애물이 없을 경우에만 이동
-	if (1 <= next_pos.row && next_pos.row <= MAP_HEIGHT - 2 &&
-		1 <= next_pos.column && next_pos.column <= MAP_WIDTH - 2 &&
-		map[1][next_pos.row][next_pos.column] < 0) {
+		// 경계 체크 및 장애물 확인
+		if (1 <= next_pos.row && next_pos.row <= MAP_HEIGHT - 2 &&
+			1 <= next_pos.column && next_pos.column <= MAP_WIDTH - 2 &&
+			map[0][next_pos.row][next_pos.column] != 'R') {  // Rock 회피 조건
+			return next_pos;  // 이동할 위치 반환
+		}
 
-		return next_pos;  // 이동할 위치 반환
+		// 장애물로 인해 이동 불가 시 방향 전환
+		preferred_dir = (DIRECTION)((preferred_dir % 4) + 1); // 시계 방향으로 변경
 	}
-	else {
-		return obj->pos;  // 이동할 수 없으면 제자리
-	}
+
+	// 이동할 방향이 없으면 제자리 유지
+	return obj->pos;
 }
 
-/*
-void sample_obj_move(OBJECT_SAMPLE* obj) {
-	while (1) {  // 반복적으로 이동
-		if (sys_clock <= obj->next_move_time) {
-			return;
-		}
 
-		// 현재 위치에서 가장 가까운 오브젝트 찾기
-		POSITION nearest_object_pos = find_nearest_unit(obj->pos, map[1]);
-
-		// 가장 가까운 오브젝트 위치를 새로운 목적지로 설정
-		if (nearest_object_pos.row != -1 && nearest_object_pos.column != -1) {
-			obj->dest = nearest_object_pos;
-		}
-		else {
-			// 찾는 오브젝트가 없으면 이동 종료
-			break;
-		}
-
-		//while (obj->pos.row != obj->dest.row || obj->pos.column != obj->dest.column) {
-			map[1][obj->pos.row][obj->pos.column] = -1; // 현재 위치 초기화
-			obj->pos = sample_obj_next_position(obj);    // 다음 위치 계산 및 업데이트
-			map[1][obj->pos.row][obj->pos.column] = obj->repr; // 새 위치에 샌드웜 설정
-			obj->next_move_time = sys_clock + obj->speed; // 다음 이동 시간 갱신
-		//}
-	}
-}
-*/
-
-// 샌드웜이 가장 가까운 유닛을 향해 이동
 void sample_obj_move(OBJECT_SAMPLE* obj) {
 	while (sys_clock > obj->next_move_time) {  // 이동 시간이 되었을 때만 반복 실행
-		// 현재 위치를 빈 공간으로 설정
-		map[1][obj->pos.row][obj->pos.column] = -1;
 
-		// 현재 목적지에 도달했는지 확인하고, 도달했다면 새로운 유닛을 찾아 목적지를 갱신
-		if (obj->pos.row == obj->dest.row && obj->pos.column == obj->dest.column) {
-			map[1][obj->pos.row][obj->pos.column] = obj->repr;  // 새로운 위치에 샌드웜 설정
-			
-			// 현재 목적지에 도달했으므로, 새로운 유닛을 찾음
-			POSITION nearest_object_pos = find_nearest_unit(obj->pos, map);
-			if (nearest_object_pos.row != -1 && nearest_object_pos.column != -1) {
-				obj->dest = nearest_object_pos;
-			}
-		}
+		// 현재 위치를 빈 공간으로 설정 (샌드웜이 움직이기 전에 비우기)
+		map[1][obj->pos.row][obj->pos.column] = -1; // 현재 위치 비움
 
 		// 다음 위치 계산 및 업데이트
 		POSITION new_pos = sample_obj_next_position(obj);
 
+		// 이동할 위치가 없거나 멈춰야 할 경우, 현재 위치에 repr 표시
+		if (new_pos.row == obj->pos.row && new_pos.column == obj->pos.column) {
+			if (map[1][obj->pos.row][obj->pos.column] == -1) {
+				map[1][obj->pos.row][obj->pos.column] = obj->repr; // 현재 위치에 다시 표시
+			}
+			break; // 이동 종료
+		}
+
 		// 새로운 위치가 현재 위치와 다를 때만 이동
 		if (new_pos.row != obj->pos.row || new_pos.column != obj->pos.column) {
-			map[1][obj->pos.row][obj->pos.column] = -1;
 			obj->pos = new_pos;  // 샌드웜 위치 갱신
 			map[1][obj->pos.row][obj->pos.column] = obj->repr;  // 새로운 위치에 샌드웜 설정
 			obj->next_move_time = sys_clock + obj->speed;  // 다음 이동 시간 설정
 		}
-		else {
-			// 이동할 위치가 없을 경우 이동을 중단
+
+		// 현재 목적지에 도달했는지 확인하고, 도달했다면 유닛을 잡아먹고 새로운 유닛을 찾아 목적지를 갱신
+		if (obj->pos.row == obj->dest.row && obj->pos.column == obj->dest.column) {
+			// 유닛을 잡아먹고, 그 자리를 비움	
+			map[1][obj->dest.row][obj->dest.column] = -1;  // 유닛 사라지게 함
+			map[1][obj->dest.row][obj->dest.column] = obj->repr;
+
+			// 현재 목적지에 도달했으므로, 새로운 유닛을 찾음
+			POSITION nearest_object_pos = find_nearest_unit(obj->pos, map);
+			if (nearest_object_pos.row != -1 && nearest_object_pos.column != -1) {
+				obj->dest = nearest_object_pos;  // 새로운 유닛을 찾아 목적지 갱신
+			}
+		}
+
+		// 이동할 위치가 없을 경우 이동을 중단
+		if (new_pos.row == obj->pos.row && new_pos.column == obj->pos.column) {
 			break;
 		}
 	}
