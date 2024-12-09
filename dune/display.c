@@ -21,6 +21,9 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 void display_cursor(CURSOR cursor);
 void display_status_title();
 void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, int is_update_requested, int reset);
+void display_command_title();
+void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, int is_update_requested, int reset);
+
 
 void display(   //자원량, 
 	RESOURCE resource,
@@ -35,7 +38,8 @@ void display(   //자원량,
 	display_cursor(cursor);
 	// display_system_message()
 	display_object_info(map, cursor, is_update_requested, reset);
-	// display_commands()
+	display_command_title();
+	display_commands(map, cursor, is_update_requested, reset);
 	// ...
 }
 
@@ -192,5 +196,75 @@ void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor
 				current_info_y = 2;
 			}
 		
+	}
+}
+
+void display_command_title() {
+	set_color(15);  // 오브젝트 정보 색상 설정
+	set_cursor_position(MAP_WIDTH + 1, MAP_HEIGHT);
+	printf("==========명령창==========\n");
+}
+
+void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, int is_update_requested, int reset) {
+	// esc를 눌렀을 떄 상태창 초기화
+	if (reset == 1) {
+		set_cursor_position(MAP_WIDTH + 1, MAP_HEIGHT+1);
+		clear_line_from_cursor();
+	}
+
+	//space를 눌렀을 때 해당 명령어 출력
+	if (is_update_requested == 1) {
+		set_color(15);  // 명령어 색상 설정
+		int current_info_y = MAP_HEIGHT+1;  // 상태창 출력의 Y축 시작 위치
+		int layer;
+		char object_repr = ' ';  // 기본값으로 빈 공간으로 설정
+
+
+		// 현재 커서 위치에서 `map`의 `repr` 값 가져오기
+		for (int layer = 0; layer < N_LAYER; layer++) {
+			object_repr = map[layer][cursor.current.row][cursor.current.column];
+
+			if (object_repr != ' ') {
+				break;
+			}
+		};
+
+		// 상태창에서 명령어 출력 위치 설정
+		set_cursor_position(MAP_WIDTH + 1, current_info_y);
+
+		clear_line_from_cursor();
+
+		switch (object_repr) {
+		case 'B':
+			if ((cursor.current.row <= 2 && cursor.current.column >= MAP_WIDTH - 5) || (cursor.current.row >= 15 && cursor.current.column <= 2)) {
+				printf("H: 하베스터 생산");
+			}
+			else {
+				printf("S: 보병생산");
+			}
+			break;
+		case 'P' && 'D' && 'G' && 'R':
+			printf(" ");
+			break;
+		case 'S':
+			if ((cursor.current.row == 7 && cursor.current.column == 58) || (cursor.current.row == 9 && cursor.current.column == 1)) {
+				printf(" ");
+			}
+			else {
+				printf("F: 프레멘 생산 row = %d, col = %d", cursor.current.row, cursor.current.column);
+			}
+			break;
+		default:
+			printf(" ");
+			break;
+		}
+
+		printf("\n");
+
+		// current_info_y가 일정 범위를 넘지 않도록 초기화 (예: 상태창 길이 제한)
+		if (current_info_y > MAP_HEIGHT) { // 상태창 출력 높이 제한 예시
+			current_info_y = 2;
+		}
+
 	}
 }

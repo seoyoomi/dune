@@ -64,7 +64,14 @@ OBJECT_SAMPLE h_harvester = {
 	.dest = {0, 0},
 	.repr = 'H',  //화면에 표시될 문자
 	.speed = 0,
-	.next_move_time = 0
+	.next_move_time = 2000,
+	.cost = 5,
+	.population = 5,
+	.attack = 0,
+	.attack_period = 0,
+	.health = 70,
+	.vision = 0,
+	.command = 'H',
 };
 
 OBJECT_SAMPLE rock1 = {

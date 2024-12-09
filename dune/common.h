@@ -95,6 +95,15 @@ typedef struct {
 	int move_period;	// '몇 ms마다 한 칸 움직이는지'를 뜻함
 	int next_move_time;	// 다음에 움직일 시간
 	int speed;
+
+	int cost;              // 생산 비용
+	int population;        // 유닛이 차지하는 인구 수
+	int attack;                // 공격력
+	int attack_period;         // 공격 주기 (ms 단위)
+	int health;                // 체력
+	int vision;                // 시야 
+	char command;			   // 명령어
+	bool is_being_produced;    // 생산 중인 상태 (true/false)
 } OBJECT_SAMPLE;
 
 #endif
