@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include <conio.h>
 #include <assert.h>
+#include <string.h>
 
 extern int sys_clock;
 
@@ -15,7 +16,6 @@ extern int sys_clock;
 #define N_LAYER 2
 #define MAP_WIDTH	60
 #define MAP_HEIGHT	18
-
 
 /* ================= 위치와 방향 =================== */
 // 맵에서 위치를 나타내는 구조체
@@ -37,7 +37,10 @@ typedef enum {
 	k_quit,
 	k_undef, // 정의되지 않은 키 입력	
 	k_space,
-	k_escape
+	k_escape,
+	k_H,   // 'H' 키
+	k_S,   // 'S' 키
+	k_F    // 'F' 키
 } KEY;
 
 

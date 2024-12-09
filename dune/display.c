@@ -15,6 +15,7 @@ const POSITION map_pos = { 1, 0 };
 char backbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
 char frontbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
 
+
 void project(char src[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char dest[MAP_HEIGHT][MAP_WIDTH]);
 void display_resource(RESOURCE resource);
 void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
@@ -23,7 +24,10 @@ void display_status_title();
 void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, int is_update_requested, int reset);
 void display_command_title();
 void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, int is_update_requested, int reset);
+void display_systemMessage_title();
+void display_system_message(CURSOR cursor);
 
+void add_system_message(const char* message);
 
 void display(   //자원량, 
 	RESOURCE resource,
@@ -36,7 +40,8 @@ void display(   //자원량,
 	display_status_title();
 	display_map(map);
 	display_cursor(cursor);
-	// display_system_message()
+	display_systemMessage_title();
+	display_system_message(cursor);
 	display_object_info(map, cursor, is_update_requested, reset);
 	display_command_title();
 	display_commands(map, cursor, is_update_requested, reset);
@@ -201,21 +206,21 @@ void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor
 
 void display_command_title() {
 	set_color(15);  // 오브젝트 정보 색상 설정
-	set_cursor_position(MAP_WIDTH + 1, MAP_HEIGHT);
+	set_cursor_position(MAP_WIDTH + 1, MAP_HEIGHT+1);
 	printf("==========명령창==========\n");
 }
 
 void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, int is_update_requested, int reset) {
-	// esc를 눌렀을 떄 상태창 초기화
+	// esc를 눌렀을 때 상태창 초기화
 	if (reset == 1) {
-		set_cursor_position(MAP_WIDTH + 1, MAP_HEIGHT+1);
+		set_cursor_position(MAP_WIDTH + 1, MAP_HEIGHT+2);
 		clear_line_from_cursor();
 	}
 
 	//space를 눌렀을 때 해당 명령어 출력
 	if (is_update_requested == 1) {
 		set_color(15);  // 명령어 색상 설정
-		int current_info_y = MAP_HEIGHT+1;  // 상태창 출력의 Y축 시작 위치
+		int current_info_y = MAP_HEIGHT+2;  // 상태창 출력의 Y축 시작 위치
 		int layer;
 		char object_repr = ' ';  // 기본값으로 빈 공간으로 설정
 
@@ -243,7 +248,7 @@ void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, i
 				printf("S: 보병생산");
 			}
 			break;
-		case 'P' && 'D' && 'G' && 'R':
+		case 'P' || 'D' || 'G' || 'R':
 			printf(" ");
 			break;
 		case 'S':
@@ -251,7 +256,7 @@ void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, i
 				printf(" ");
 			}
 			else {
-				printf("F: 프레멘 생산 row = %d, col = %d", cursor.current.row, cursor.current.column);
+				printf("F: 프레멘 생산");
 			}
 			break;
 		default:
@@ -261,10 +266,56 @@ void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, i
 
 		printf("\n");
 
+		// 키 입력 받기
+		KEY key_input = get_key();
+
 		// current_info_y가 일정 범위를 넘지 않도록 초기화 (예: 상태창 길이 제한)
 		if (current_info_y > MAP_HEIGHT) { // 상태창 출력 높이 제한 예시
 			current_info_y = 2;
 		}
 
+		// 입력된 키를 반환
+		return key_input;
+	}
+}
+
+void display_systemMessage_title() {
+	set_color(15);  // 오브젝트 정보 색상 설정
+	set_cursor_position(0, MAP_HEIGHT + 1);
+	printf("==========시스템메세지==========\n");
+}
+
+
+// 시스템 메시지 설정
+#define MESSAGE_LOG_SIZE 5 // 메시지 로그 크기 제한
+char system_messages[MESSAGE_LOG_SIZE][50]; // 메시지 배열
+int message_count = 0; // 현재 저장된 메시지 수
+
+void display_system_message(CURSOR cursor) {
+
+	//시스템 상태 출력 조건...
+
+	// 메시지를 화면에 출력
+	for (int i = 0; i < message_count; i++) {
+		set_cursor_position(0, MAP_HEIGHT + 2 + i); // 메시지 출력 위치 설정
+		clear_line_from_cursor(); // 기존 메시지를 지움
+		printf("%s\n", system_messages[i]); // 메시지 출력
+	}
+}
+
+// 새로운 메시지를 추가하는 함수
+void add_system_message(const char* message) {
+	if (message_count < MESSAGE_LOG_SIZE) {
+		// 배열이 가득 차지 않았으면 메시지 추가
+		snprintf(system_messages[message_count], 50, "%s", message);
+		message_count++;
+	}
+	else {
+		// 배열이 가득 찼으면 스크롤 동작
+		for (int i = 0; i < MESSAGE_LOG_SIZE - 1; i++) {
+			strncpy_s(system_messages[i], sizeof(system_messages[i]), system_messages[i + 1], sizeof(system_messages[i + 1]));
+		}
+		// 마지막 줄에 새로운 메시지를 추가
+		snprintf(system_messages[MESSAGE_LOG_SIZE - 1], 50, "%s", message);
 	}
 }
