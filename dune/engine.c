@@ -146,14 +146,6 @@ OBJECT_SAMPLE p_harvester = {
 	.next_move_time = 0
 };
 
-OBJECT_SAMPLE p_harvester2 = {
-	.pos = {MAP_HEIGHT - 13, 20},
-	.dest = {0, 0},
-	.repr = 'H',  //화면에 표시될 문자
-	.speed = 0,
-	.next_move_time = 0
-};
-
 OBJECT_SAMPLE sandwarm1 = {
 	.pos = {2, MAP_WIDTH - 48},
 	.dest = {MAP_HEIGHT - 2, MAP_WIDTH - 3},
@@ -289,7 +281,6 @@ void init(void) {
 
 	//플레이어 하베스터
 	place_object(1, 1, 1, p_harvester);
-	place_object(1, 1, 1, p_harvester2);
 
 	//샌드웜
 	place_object(1, 1, 1, sandwarm1);

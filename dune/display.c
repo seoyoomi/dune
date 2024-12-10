@@ -25,9 +25,10 @@ void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor
 void display_command_title();
 void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, int is_update_requested, int reset);
 void display_systemMessage_title();
-void display_system_message(CURSOR cursor);
+void display_system_message(int is_update_requested, int reset);
 
 void add_system_message(const char* message);
+void add_system_message_2(const char* message);
 
 void display(   //자원량, 
 	RESOURCE resource,
@@ -41,7 +42,7 @@ void display(   //자원량,
 	display_map(map);
 	display_cursor(cursor);
 	display_systemMessage_title();
-	display_system_message(cursor);
+	display_system_message(is_update_requested, reset);
 	display_object_info(map, cursor, is_update_requested, reset);
 	display_command_title();
 	display_commands(map, cursor, is_update_requested, reset);
@@ -157,8 +158,6 @@ void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor
 		// 상태창에서 오브젝트 정보 출력 위치 설정
 		set_cursor_position(MAP_WIDTH + 1, current_info_y);
 
-		clear_line_from_cursor();
-
 			switch (object_repr) {
 			case 'B':
 				if (cursor.current.row <= 2 && cursor.current.column >= MAP_WIDTH - 5) {
@@ -210,11 +209,15 @@ void display_command_title() {
 	printf("==========명령창==========\n");
 }
 
+char system_messages_2[50][50]; // 메시지 배열
+int message_count_2 = 0;
+
 void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, int is_update_requested, int reset) {
 	// esc를 눌렀을 때 상태창 초기화
+
 	if (reset == 1) {
-		set_cursor_position(MAP_WIDTH + 1, MAP_HEIGHT+2);
-		clear_line_from_cursor();
+		set_cursor_position(MAP_WIDTH + 2, MAP_HEIGHT+2);
+		add_system_message_2(" ");
 	}
 
 	//space를 눌렀을 때 해당 명령어 출력
@@ -237,52 +240,50 @@ void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, i
 		// 상태창에서 명령어 출력 위치 설정
 		set_cursor_position(MAP_WIDTH + 1, current_info_y);
 
-		clear_line_from_cursor();
+		//clear_line_from_cursor();
 
 		switch (object_repr) {
 		case 'B':
 			if ((cursor.current.row <= 2 && cursor.current.column >= MAP_WIDTH - 5) || (cursor.current.row >= 15 && cursor.current.column <= 2)) {
-				printf("H: 하베스터 생산");
+				add_system_message_2("H: 하베스터 생산");
+				//printf("H: 하베스터 생산");
 			}
 			else {
-				printf("S: 보병생산");
+				add_system_message_2("S: 보병생산");
+				//printf("S: 보병생산");
 			}
 			break;
 		case 'P' || 'D' || 'G' || 'R':
-			printf(" ");
+			add_system_message_2(" ");
+			//printf(" ");
 			break;
 		case 'S':
 			if ((cursor.current.row == 7 && cursor.current.column == 58) || (cursor.current.row == 9 && cursor.current.column == 1)) {
-				printf(" ");
+				add_system_message_2(" ");
+				//printf(" ");
 			}
 			else {
-				printf("F: 프레멘 생산");
+				add_system_message_2("F: 프레멘 생산");
+				//printf("F: 프레멘 생산");
 			}
 			break;
 		default:
-			printf(" ");
+			add_system_message_2(" ");
+			//printf(" ");
 			break;
 		}
-
-		printf("\n");
-
-		// 키 입력 받기
-		KEY key_input = get_key();
 
 		// current_info_y가 일정 범위를 넘지 않도록 초기화 (예: 상태창 길이 제한)
 		if (current_info_y > MAP_HEIGHT) { // 상태창 출력 높이 제한 예시
 			current_info_y = 2;
 		}
-
-		// 입력된 키를 반환
-		return key_input;
 	}
 }
 
 void display_systemMessage_title() {
 	set_color(15);  // 오브젝트 정보 색상 설정
 	set_cursor_position(0, MAP_HEIGHT + 1);
-	printf("==========시스템메세지==========\n");
+	printf("==========시스템메세지==========");
 }
 
 
@@ -291,15 +292,25 @@ void display_systemMessage_title() {
 char system_messages[MESSAGE_LOG_SIZE][50]; // 메시지 배열
 int message_count = 0; // 현재 저장된 메시지 수
 
-void display_system_message(CURSOR cursor) {
+void display_system_message(int is_update_requested, int reset) {
+	// 조건 체크 및 메시지 추가
+	if (is_update_requested == 1) {
+		add_system_message("건물/유닛을 선택했습니다.");
+	}
 
-	//시스템 상태 출력 조건...
-
-	// 메시지를 화면에 출력
+	if (reset == 1) {
+		add_system_message("상태창과 명령어를 초기화합니다.");
+	}
+	
+		// 메시지를 화면에 출력
 	for (int i = 0; i < message_count; i++) {
 		set_cursor_position(0, MAP_HEIGHT + 2 + i); // 메시지 출력 위치 설정
 		clear_line_from_cursor(); // 기존 메시지를 지움
-		printf("%s\n", system_messages[i]); // 메시지 출력
+		printf("%s", system_messages[i]); // 메시지 출력
+		for (int j = 0; j < 1; j++) {
+			set_cursor_position(MAP_WIDTH + 2, MAP_HEIGHT + 2);
+			printf("%s", system_messages_2[message_count_2 - 1]); // 메시지 출력
+		}
 	}
 }
 
@@ -318,4 +329,9 @@ void add_system_message(const char* message) {
 		// 마지막 줄에 새로운 메시지를 추가
 		snprintf(system_messages[MESSAGE_LOG_SIZE - 1], 50, "%s", message);
 	}
+}
+
+void add_system_message_2(const char* message) {
+	snprintf(system_messages_2[message_count_2], 50, "%s", message);
+	message_count_2++;
 }
